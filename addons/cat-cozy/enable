@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+set -e
+
+source $SNAP/actions/common/utils.sh
+
+NAMESPACE="cats"
+
+KUBECTL="$SNAP/kubectl --kubeconfig=${SNAP_DATA}/credentials/client.config"
+
+do_prerequisites() {
+  "$SNAP/microk8s-enable.wrapper" helm3
+  # enable dns service
+  "$SNAP/microk8s-enable.wrapper" dns
+  # Allow some time for the apiserver to start
+  sleep 5
+  ${SNAP}/microk8s-status.wrapper --wait-ready --timeout 30 >/dev/null
+
+  "$SNAP/microk8s-enable.wrapper" metallb
+}
+
+HELM="$SNAP_DATA/bin/helm3 --kubeconfig=$SNAP_DATA/credentials/client.config"
+
+VALUES=""
+
+get_cats() {
+
+  $HELM repo add cat-repo https://alexsjones.github.io/helm-charts/ 
+
+  $HELM upgrade -i cat-cozy cat-repo/cat-cozy \
+    --namespace "$NAMESPACE" \
+    --create-namespace 
+  echo "cat-cozy is installed"
+}
+
+do_prerequisites
+get_cats
